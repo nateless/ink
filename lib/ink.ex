@@ -288,7 +288,7 @@ defmodule Ink do
   defp default_options do
     %{
       level: :debug,
-      status_mapping: :bunyan,
+      status_mapping: :text,
       filtered_strings: [],
       filtered_uri_credentials: [],
       secret_strings: [],
@@ -318,6 +318,10 @@ defmodule Ink do
       :warn -> 4
       :error -> 3
     end
+  end
+
+  defp level(level, :text) do
+    Atom.to_string(level) |> String.upcase()
   end
 
   defp hostname do
