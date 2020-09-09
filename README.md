@@ -29,7 +29,8 @@ config :logger,
 
 # at least configure a name for your app
 config :logger, Ink,
-  name: "your app"
+  name: "your app",
+  io_device: "logs/log.json", rotate: %{max_bytes: 1048576000, keep: 5}
 ```
 
 For more information on how to use `Ink`, take a look
