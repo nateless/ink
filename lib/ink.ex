@@ -176,7 +176,7 @@ defmodule Ink do
   defp log_to_device(msg, path, rotate) when is_binary(path) do
     case open_log(path, rotate) do
       {:ok, io_device} ->
-        IO.write(io_device, msg)
+        IO.write(io_device, msg <> "\n")
 
       other ->
         log_to_device(other, :stdio, nil)
