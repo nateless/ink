@@ -80,6 +80,13 @@ defmodule Ink do
 
   @behaviour :gen_event
 
+  require Record
+
+  Record.defrecordp(
+    :file_info,
+    Record.extract(:file_info, from_lib: "kernel/include/file.hrl")
+  )
+
   def init(__MODULE__) do
     {:ok, configure(Application.get_env(:logger, Ink, []), default_options())}
   end
@@ -159,12 +166,66 @@ defmodule Ink do
 
   defp log_json(other, config) do
     case config.log_encoding_error do
-      true -> log_to_device(inspect(other), config.io_device)
+      true -> log_to_device(inspect(other), config.io_device, config.rotate)
       _ -> :ok
     end
   end
 
-  defp log_to_device(msg, io_device), do: IO.puts(io_device, msg)
+  defp log_to_device(msg, :stdio), do: IO.puts(:stdio, msg)
+
+  defp log_to_device(msg, path, rotate) when is_binary(path) do
+    case open_log(path, rotate) do
+      {:ok, io_device} ->
+        IO.write(io_device, msg)
+
+      other ->
+        log_to_device(other, :stdio)
+    end
+  end
+
+  defp open_log(path, rotate) do
+    with :ok <- path |> Path.dirname() |> File.mkdir_p(),
+         true <- rotate(path, rotate),
+         {:ok, io_device} <- File.open(path, [:append, :utf8]) do
+      {:ok, io_device}
+    else
+      other -> other
+    end
+  end
+
+  defp rotate(path, %{max_bytes: max_bytes, keep: keep})
+       when is_integer(max_bytes) and is_integer(keep) and keep > 0 do
+    case :file.read_file_info(path, [:raw]) do
+      {:ok, file_info(size: size)} ->
+        if size >= max_bytes, do: rename_file(path, keep)
+
+        true
+
+      _ ->
+        true
+    end
+  end
+
+  defp rotate(_, _) do
+    true
+  end
+
+  defp rename_file(path, keep) do
+    File.rm("#{path}.#{keep}")
+
+    Enum.each((keep - 1)..1, fn x ->
+      File.rename("#{path}.#{x}", "#{path}.#{x + 1}")
+    end)
+
+    File.rename(path, "#{path}.1")
+  end
+
+  defp get_inode(path) do
+    case :file.read_file_info(path, [:raw]) do
+      {:ok, file_info(inode: inode)} -> inode
+      {:error, _} -> nil
+    end
+  end
 
   defp base_map(message, timestamp, level, %{exclude_hostname: true} = config)
        when is_binary(message) do
@@ -234,7 +295,8 @@ defmodule Ink do
       io_device: :stdio,
       metadata: nil,
       exclude_hostname: false,
-      log_encoding_error: true
+      log_encoding_error: true,
+      rotate: nil
     }
   end
 
