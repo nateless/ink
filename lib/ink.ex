@@ -161,7 +161,7 @@ defmodule Ink do
   defp log_json({:ok, json}, config) do
     json
     |> filter_secret_strings(config.secret_strings)
-    |> log_to_device(config.io_device)
+    |> log_to_device(config.io_device, config.rotate)
   end
 
   defp log_json(other, config) do
@@ -171,7 +171,7 @@ defmodule Ink do
     end
   end
 
-  defp log_to_device(msg, :stdio), do: IO.puts(:stdio, msg)
+  defp log_to_device(msg, :stdio, _), do: IO.puts(:stdio, msg)
 
   defp log_to_device(msg, path, rotate) when is_binary(path) do
     case open_log(path, rotate) do
@@ -179,7 +179,7 @@ defmodule Ink do
         IO.write(io_device, msg)
 
       other ->
-        log_to_device(other, :stdio)
+        log_to_device(other, :stdio, nil)
     end
   end
 
