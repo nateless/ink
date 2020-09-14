@@ -178,6 +178,8 @@ defmodule Ink do
       {:ok, io_device} ->
         IO.write(io_device, msg <> "\n")
 
+        File.close(io_device)
+
       other ->
         log_to_device(other, :stdio, nil)
     end
