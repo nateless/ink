@@ -222,18 +222,11 @@ defmodule Ink do
     File.rename(path, "#{path}.1")
   end
 
-  defp get_inode(path) do
-    case :file.read_file_info(path, [:raw]) do
-      {:ok, file_info(inode: inode)} -> inode
-      {:error, _} -> nil
-    end
-  end
-
   defp base_map(message, timestamp, level, %{exclude_hostname: true} = config)
        when is_binary(message) do
     %{
-      name: name(),
-      pid: System.get_pid() |> String.to_integer(),
+      # name: name(),
+      # pid: System.get_pid() |> String.to_integer(),
       msg: message,
       time: formatted_timestamp(timestamp),
       level: level(level, config.status_mapping)
@@ -242,8 +235,8 @@ defmodule Ink do
 
   defp base_map(message, timestamp, level, config) when is_binary(message) do
     %{
-      name: name(),
-      pid: System.get_pid() |> String.to_integer(),
+      # name: name(),
+      # pid: System.get_pid() |> String.to_integer(),
       hostname: hostname(),
       msg: message,
       time: formatted_timestamp(timestamp),
